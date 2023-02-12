@@ -61,6 +61,16 @@ def readConstraints():
   ...
 def getConstraintsMatrix():
   ...
+def print_matrix(constraints_matrix):
+  ...
+def checkOrdonnancement():
+  ...
+def getNodeRanks():
+  ...
+def getSchedules():
+  ...
+def askUserForConstraints():
+  ...
 
 
 def main():
@@ -76,20 +86,24 @@ def main():
     # Créer la matrix correspondant au graphe repésentant ce tableau de
     # contraintes et l'afficher
     constraints_matrix = getConstraintsMatrix()
+    print_matrix(constraints_matrix)
     # Verifier que l es proprietes necessaires pur que ce graphe
     # soit un graphe d'ordonnacement sont verifiees
-
+    if (checkOrdonnancement()):
         #Si oui alors
         # Calculer les rans des sommets et les afficher
+        node_ranks = getNodeRanks()
         # Calculer les calendriers au plus tot 
+        shedules = getSchedules()
         # et au plus tard et les afficher
-
+    else:
         #Sinon
         # Proposer à l'utilisateur de changer de tableau de contraintes
-    #fin Tant que
-    ...
+        askUserForConstraints()
     
 
+if __name__ == "__main__":
+  ...
 
 tasks = read('example_1.txt')
 matrix = toMatrix(tasks)
