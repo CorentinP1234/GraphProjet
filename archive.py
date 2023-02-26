@@ -63,3 +63,18 @@ def read_constraints_table(file: str):
         Edge.print(edges)
 
         return Table(node_ids, edges)
+
+
+class Edge:
+    def __init__(self, start_node, end_node, duration):
+        self.start = start_node
+        self.end = end_node
+        self.dur = duration
+
+    def __repr__(self) -> str:
+        return f"{self.start} -> {self.end} = {self.dur}"
+
+    @staticmethod
+    def print(edge_list):
+        for edge in edge_list:
+            print(edge)

@@ -1,50 +1,37 @@
 """
-1. Lecture d un tableau de contraintes contenu dans un fichier .txt, mise en
-    mémoire et affichage de ce tableau sur l écran ;
-2. Construction d un graphe correspondant à ce tableau de contraintes ;
+1. Lecture d'un tableau de contraintes contenu dans un fichier .txt, mise en
+    mémoire et affichage de ce tableau sur l'écran ;
+2. Construction d'un graphe correspondant à ce tableau de contraintes ;
 3. Vérification du fait que ce graphe possède toutes les propriétés nécessaires pour
-    qu il soit un graphe d ordonnancement :
-        o Un seul point d entrée
+    qu'il soit un graphe d'ordonnancement :
+        o Un seul point d'entrée
         o Un seul point de sortie
         o Pas de circuit
-        o Valeurs identiques pour tous les arcs incidents vers l extérieur à un
+        o Valeurs identiques pour tous les arcs incidents vers l'extérieur à un
         sommet,
-        o Arcs incidents vers l extérieur au point d entrée ont une valeur nulle,
-        o Pas d arcs à valeur négative.
+        o Arcs incidents vers l'extérieur au point d'entrée ont une valeur nulle,
+        o Pas d'arcs à valeur négative.
 4. Si toutes ces propriétés sont vérifiées, calculer le calendrier au plus tôt, la durée
     totale de projet, le calendrier au plus tard et les marges.
     Pour le calcul du calendrier au plus tard, utilisez la convention que la date au
     plus tard de fin de projet soit égale à sa date au plus tôt.
-    Comme vous savez, pour le calcul des calendriers il faut d abord effectuer le
-    tri topologique du graphe : ordonner les sommets dans l ordre des rangs
+    Comme vous savez, pour le calcul des calendriers, il faut d'abord effectuer le
+    tri topologique du graphe : ordonner les sommets dans l'ordre des rangs
     croissants. Il faut donc affecter un rang à chaque sommet, en utilisant un
-    algorithme de votre choix parmi ceux que vous avez vu en cours.
+    algorithme de votre choix parmi ceux que vous avez vus en cours.
 """
-
-
-class Edge:
-    def __init__(self, start_node, end_node, duration):
-        self.start = start_node
-        self.end = end_node
-        self.dur = duration
-
-    def __repr__(self) -> str:
-        return f"{self.start} -> {self.end} = {self.dur}"
-
-    @staticmethod
-    def print(edge_list):
-        for edge in edge_list:
-            print(edge)
 
 
 class Graph:
     # self.adj_list[from_node][to_node] = self.durationOf[from_node]
     def __init__(self):
         self.durationOf: dict = {0: 0}
-        self.all_ids: set = set()
+        self.all_ids: set = {0}
         self.adj_list: dict = {}
+        self.num_of_edges = 0
 
     def add_edge(self, from_node, to_node, specific_duration=None):
+        self.num_of_edges += 1
         if from_node not in self.adj_list:
             self.adj_list[from_node] = []
         if specific_duration:
@@ -65,6 +52,7 @@ class Graph:
         return None
     
     def add_omega_edges(self):
+        # Add omega edges
         nodes_with_ex_edge = self.adj_list.keys()
         N = len(self.all_ids)
         for node_id in self.all_ids:
@@ -72,15 +60,18 @@ class Graph:
                 self.add_edge(node_id, N+1)
         # Add N+1 node
         self.all_ids.add(N + 1)
-
+    
     def print(self):
+        print(f"{len(self.all_ids)} sommets")
+        print(f"{self.num_of_edges} arcs")
         for from_node, to_nodes in sorted(self.adj_list.items()):
             for to_node in to_nodes:
                 print(f"{from_node} -> {to_node} = {self.durationOf[from_node]}")
+        exit()
+
 
 # 1. Lecture d’un tableau de contraintes donné dans un fichier texte ( .txt) et stockage en mémoire
 # read (file): given a file, return a tuple containing a list of nodes ids (numbers) and a list of edges (edge objects)
-
 def read_constraints_table(file):
     g: Graph = Graph()
 
@@ -185,9 +176,9 @@ def main():
 
         # Créer la matrix correspondant au graphe représentant ce tableau de
         # contraintes et l'afficher
-        constraints_matrix = getAdjacentMatrix(graph)
+        matrix = getAdjacentMatrix(graph)
+        print_matrix(matrix)
         exit()
-        print_matrix()
         # Verifier que les propriétés nécessaires pour que ce graphe
         # soit un graphe d'ordonnancement sont vérifiées
         if check_scheduling_graph():
