@@ -48,7 +48,7 @@ def read_constraints_table(file: str):
             # Check if the node has successors
             is_a_final_node = True
             for task in tasks:
-                if node_id in task.pred and node_id != task.id:
+                if node_id in task.succOf and node_id != task.id:
                     # If the node has successors, add the edges to the edges list
                     is_a_final_node = False
                     edges.append(Edge(node_id, task.id, tasks[node_id-2].dur))
