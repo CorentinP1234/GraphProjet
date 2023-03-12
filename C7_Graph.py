@@ -1,139 +1,106 @@
-from C7_Utils import *
+import copy
+import C7_Interface as Interface
 
 
 class Graph:
-    # self.adj_list[from_node][to_node] = self.duration_of[from_node]
     def __init__(self, name):
-        self.name = name
-        self.predecessor_of = {}
-        self.successor_of = {0: set()}
-        self.duration_of = {0: 0}
-        self.node_ids = {0}
-        self.number_of_edges = 0
-        self.omega_node_id = None
-        self.adjacency_matrix = None
-        self.i = 0
-    
-    def add_node(self, node_id, duration):
-        """Add a node_id (int) to the to set of ids node_ids"""
-        if node_id in self.node_ids:
-            print(f"{COLORS.WARNING}Warning{COLORS.ENDC}: Tache {node_id} a deja été ajouté")
-        self.node_ids.add(node_id)
-        if duration:
-            if node_id in self.duration_of:
-                print(f"Warning : Tache {node_id} avait pour durée {duration[node_id]}\
-                         et va être écrasé par {duration}")
-            self.duration_of[node_id] = duration
-    
-    def get_number_of_nodes(self):
+        # Initialise les propriétés de la classe
+        self.node_ids = {0}  # Ensemble de tous les identifiants de nœuds
+        self.node_ids_with_successor = {0}  # Ensemble des nœuds ayant des successeurs
+        self.predecessors_of = {}  # Dictionnaire des prédécesseurs de chaque nœud
+        self.duration_of = {0: 0}  # Dictionnaire des durées de chaque nœud
+        self.omega_node_id = None  # Identifiant du nœud Omega
+        self.adjacency_matrix = None  # Matrice d'adjacence
+        
+        self.name = name  # Nom du graphe
+        self.number_of_edges = 0  # Nombre d'arêtes
+        self.number_of_vertices = 0  # Nombre de sommets
+        
+        self.early_schedule = None  # Calendrier au plus tot
+        self.late_schedule = None  # Calendrier au plus tard
+        
+        self.ranks_and_ids = None  # list of tuple containing ranks and ids
+
+    def get_num_nodes(self):
         return len(self.node_ids)
     
-    def get_number_of_edges(self):
-        return self.number_of_edges
+    def add_node(self, node_id, duration):
+        # Ajoute un nœud au graphe avec son identifiant et sa durée
+        if node_id in self.node_ids:
+            Interface.printWarning(
+                f"Tache {node_id} a deja été ajouté")  # Affiche un avertissement si le nœud est déjà présent
+        self.node_ids.add(node_id)
+        self.number_of_vertices += 1  # Incrémente le nombre de sommets
+        if duration:
+            # Affiche un avertissement si la durée du nœud est déjà définie
+            if node_id in self.duration_of:
+                Interface.printWarning(f"Tache {node_id} avait pour durée {duration[node_id]}\
+                                    et va être écrasé par {duration}")
+            self.duration_of[node_id] = duration
     
-    def get_successors(self, node_id) -> tuple[int]:
-        # Return a set of successors or an empty set
-        return self.successor_of.get(node_id, set())
-    
-    def get_predecessors(self, node_id):
-        # Return a set of predecessors or an empty set
-        return self.predecessor_of.get(node_id, set())
-    
-    def add_omega_node(self):
-        # Add the last node and no duration is set
-        self.omega_node_id = len(self.node_ids)
-        self.add_node(self.omega_node_id, None)
+    def get_predecessor_of(self, node_id):
+        # Renvoie les prédécesseurs d'un nœud
+        return self.predecessors_of.get(node_id, set())
     
     def add_edge(self, from_node, to_node):
-        """Add an edge by updating maps of predecessors and successors, increment the number of edges"""
-        # Update set of predecessors
-        if to_node not in self.predecessor_of:
-            self.predecessor_of[to_node] = set()
-        self.predecessor_of[to_node].add(from_node)
-        
-        # Update set of successors
-        if from_node not in self.successor_of:
-            self.successor_of[from_node] = set()
-        self.successor_of[from_node].add(to_node)
-        
-        # Update the number of edges
-        self.number_of_edges += 1
+        # Ajoute une arête du nœud from_node vers le nœud to_node
+        if to_node not in self.predecessors_of:
+            self.predecessors_of[to_node] = set()
+        self.predecessors_of[to_node].add(from_node)  # Ajoute le nœud from_node aux prédécesseurs du nœud to_node
+        self.node_ids_with_successor.add(
+            from_node)  # Ajoute le nœud from_node à l'ensemble des nœuds ayant des successeurs
+        self.number_of_edges += 1  # Incrémente le nombre d'arêtes
+    
+    def add_omega_node(self):
+        # Ajoute le nœud Omega au graphe
+        self.omega_node_id = len(self.node_ids)
+        self.add_node(self.omega_node_id, None)  # Ajoute le nœud Omega sans durée
+        self.number_of_vertices += 1  # Incrémente le nombre de sommets
+    
+    def add_omega_edges(self):
+        # Ajoute des arêtes du nœud Omega vers les nœuds sans successeurs
+        node_w_no_successors = (self.node_ids - self.node_ids_with_successor) - {self.omega_node_id}
+        self.number_of_edges += len(node_w_no_successors)  # Incrémente le nombre d'arêtes
+        self.predecessors_of[self.omega_node_id] = node_w_no_successors
     
     def add_edges(self, predecessors, node_id):
-        """Add edges from each predecessor in the list of predecessors to the node with node_id"""
-        
-        # If the task has predecessors, add edges pred -> task_num
+        # Ajoute les arcs entre les prédecesseurs et le nœud courant
         if predecessors:
             for pred in predecessors:
                 self.add_edge(pred, node_id)
-        
-        # If not, add an edge 'alpha' -> task_num
+        # Si pas de prédecesseurs, relie au nœud initial (0)
         else:
             self.add_edge(0, node_id)
     
-    def add_omega_edges(self):
-        nodes_with_ex_edge = self.successor_of.keys()
-        for node_id in self.node_ids - {self.omega_node_id}:
-            if node_id not in nodes_with_ex_edge:
-                self.add_edge(node_id, self.omega_node_id)
-    
-    def get_nodes_with_no_predecessors2(self, ignore=None):
-        if ignore is None:
-            ignore = set()
-        res = self.node_ids - (set(self.predecessor_of.keys()).union(ignore))
-        if self.i == 1:
-            print()
-            print(self.node_ids)
-            print(self.predecessor_of.keys())
-            print(ignore)
-            print(f"no pred : {res}")
-            exit()
-        else:
-            self.i += 1
-        return res
-    
     def get_nodes_with_no_predecessors(self, ignore=None):
+        # Retourne les nœuds sans prédecesseurs en ignorant certains nœuds (par défaut, aucun)
         if ignore is None:
             ignore = set()
-        predOf = self.predecessor_of.copy()
-        
-        # Remove Ignored nodes
+        predOf = copy.deepcopy(self.predecessors_of)
         nodes_with_no_pred = set()
+        # Parcours tous les nœuds et retire les prédecesseurs ignorés
         for node in predOf.keys():
             predOf[node] -= ignore
+            # Si aucun prédecesseurs restant, ajoute le nœud à la liste
             if not predOf[node]:
                 nodes_with_no_pred.add(node)
-        
+        # Si aucun nœud sans prédecesseurs, ajoute le nœud initial (0)
         if not nodes_with_no_pred:
             nodes_with_no_pred = {0}
-        
         return nodes_with_no_pred - ignore
     
-    def print(self):
-        print(f"{COLORS.UNDERLINE}Graphe d'ordonnancement de " + self.name + COLORS.ENDC)
-        print(f" {len(self.node_ids)} sommets")
-        print(f" {self.number_of_edges} arcs")
-        for from_node, to_nodes in sorted(self.successor_of.items()):
-            for to_node in to_nodes:
-                duration = self.duration_of[from_node]
-                print(f" {from_node} -> {to_node} = {duration}")
-        print()
+    def get_successors_of(self, from_node):
+        return [to_node for to_node, dur in enumerate(self.adjacency_matrix[from_node]) if dur != -1]
     
-    
-    def get_adjacency_matrix(self) -> list:
-        num_nodes = self.get_number_of_nodes()
-        adjacency_matrix = [['.'] * num_nodes for _ in range(num_nodes)]
-        for from_node in self.node_ids:
-            for to_node in self.get_successors(from_node):
-                adjacency_matrix[from_node][to_node] = self.duration_of[from_node]
-        return adjacency_matrix
-    
-    # def add_successor(self, node_id, succ):
-    #     if node_id not in self.successor_of:
-    #         self.successor_of[node_id] = set()
-    #     self.successor_of[node_id].add(succ)
-    
-    # def add_predecessor(self, node_id, pred):
-    #     if node_id not in self.predecessor_of:
-    #         self.predecessor_of[node_id] = set()
-    #     self.predecessor_of[node_id].add(pred)
+    def get_ranks_and_ids(self):
+        ranks = []
+        ids = []
+        # Parcours de la liste de tuples 'ranks_and_ids'
+        for tup in self.ranks_and_ids:
+            # Ajout du premier élément du tuple (le rang) à la liste des rangs
+            ranks.append(tup[0])
+            # Ajout du deuxième élément du tuple (l'identifiant) à la liste des identifiants
+            ids.append(tup[1])
+        
+        # Retourne un tuple contenant les deux listes
+        return ranks, ids
